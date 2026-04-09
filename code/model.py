@@ -40,12 +40,34 @@ class CSABlock(nn.Module):
         # Q, K, V for all heads
         ### YOUR CODE HERE ###
 
+        # Calculate Q, K, V representations
+        q = self.Q_proj(x)
+        k = self.K_proj(x)
+        v = self.V_proj(x)
+
+        # Reshape and transponse for multi-head attention 
+        # (splits embedding dimension C into smaller chunks) = D
+        head_size = C // self.n_head
+
+        # Reshape matrices to (Batch, Length, Heads, head_size)
+        q = q.view(B, L, self.n_head, head_size).transpose(1, 2)
+        k = k.view(B, L, self.n_head, head_size).transpose(1, 2)
+        v = v.view(B, L, self.n_head, head_size).transpose(1, 2)
+
         ### YOUR CODE HERE ###
 
         # Causal self-attention
         # hint: apply causal mask by using the PyTorch function "masked_fill" with value float('-inf') on attention scores, then apply softmax
         ### YOUR CODE HERE ###
 
+        # Calculate dot product: Q * K^T and divide by squre root of D
+        att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(head_size))     # transpose flips last 2 dimensions
+
+        # Apply causal mask (replace 0s in the future positions with -inf)
+        att = att.masked_fill(self.mask[:, :, :L, :L] == 0, float('-inf'))
+
+        # Apply softmax to get probabilities
+        att = F.softmax(att, dim=-1)
 
         ### YOUR CODE HERE ###
 
@@ -55,6 +77,12 @@ class CSABlock(nn.Module):
 
         # Apply the attention to the values; Combine all head outputs
         ### YOUR CODE HERE ###
+
+        # Multiply probabilities by matrix V
+        y = att @ v     # shape: (B, n_head, L, head_size)
+
+        # Combine all head outputs back together
+        y = y.transpose(1, 2).contiguous().view(B, L, C)
 
         ### YOUR CODE HERE ###
 
