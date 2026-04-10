@@ -36,12 +36,25 @@ def generate_sample(model, tokenizer, conditions, max_length):
             # hint: use the "sample_from_logits" function to sample the next token based on model's output (logits)
             ### YOUR CODE HERE ###
 
+            # Pass the current sequence through the model
+            logits, _, _ = model(input_ids)     # extract logits at index 0
+
+            # Extract logits for the last token in the seqeunce
+            next_token_logits = logits[:, -1, :]    # grab predictions for the final position
+
+            # Sample the next token using the helper function (temp ~0 to behave greedy)
+            next_token = sample_from_logits(next_token_logits, temp=0.01)
+
             # hint: uncomment the following finishing conditions
-            # if next_token.item() == tokenizer.vocab["</s>"] or next_token.item() == tokenizer.vocab["<pad>"]:
-            #     break
+            if next_token.item() == tokenizer.vocab["</s>"] or next_token.item() == tokenizer.vocab["<pad>"]:
+                break
+
+            # Append newly generated token to the end of input_ids
+            input_ids = torch.cat([input_ids, next_token], dim=-1)
+
             ### YOUR CODE HERE ###
             
-            pass # Comment this line after you implemented your code
+            # pass # Comment this line after you implemented your code
 
 
     generated_text = tokenizer.decode(input_ids[0][len_conditions:])
